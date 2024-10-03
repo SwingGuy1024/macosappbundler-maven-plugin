@@ -90,7 +90,7 @@ public class PlistConfiguration {
     public Boolean NSHighResolutionCapable = Boolean.TRUE;
 
     @Parameter
-    public Boolean LSUIElement = null;
+    public String LSUIElement = null;
 
     @Parameter
     public Boolean NSSupportsAutomaticGraphicsSwitching = Boolean.TRUE;
@@ -148,7 +148,7 @@ public class PlistConfiguration {
         this.appendKeyWithString(dictElement, document, "JVMVersion", this.JVMVersion);
         this.appendKeyWithString(dictElement, document, "JVMLogLevel", this.JVMLogLevel);
         this.appendKeyWithBoolean(dictElement, document, "NSHighResolutionCapable", this.NSHighResolutionCapable);
-        this.appendKeyWithBoolean(dictElement, document, "LSUIElement", this.LSUIElement);
+        this.appendKeyWithString(dictElement, document, "LSUIElement", this.LSUIElement);
         this.appendKeyWithBoolean(dictElement, document, "NSSupportsAutomaticGraphicsSwitching", this.NSSupportsAutomaticGraphicsSwitching);
         this.appendKeyWithString(dictElement, document, "NSMicrophoneUsageDescription", this.NSMicrophoneUsageDescription);
         this.appendKeyWithString(dictElement, document, "NSCameraUsageDescription", this.NSCameraUsageDescription);

@@ -6,6 +6,24 @@ Maven plugin for creating a native [macOS bundle](https://developer.apple.com/li
 [![License](http://img.shields.io/:license-apache-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Build](https://img.shields.io/circleci/build/github/perdian/macosappbundler-maven-plugin/master)](https://circleci.com/gh/perdian/macosappbundler-maven-plugin)
 
+## Purpose of this fork
+While most Macintosh applications appear in the task bar, Apple Developers have the option of writing an "agent," which is often permanently open, and/or runs in the background, and so doesn't belong on the task bar. They can keep it off the task bar by setting a specific value in the application's `Info.plist` file. According to the [spec](https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/LaunchServicesKeys.html), they can do this by setting the Boolean property `LSUIElement` to true:
+
+    <key>LSUIElement</key>
+    <true/>
+
+But, much to my surprise, the spec is wrong. The `LSUIElement` property is not Boolean, it's a string property. So the element needs to be set like this:
+
+    <key>LSUIElement</key>
+    <string>true</string>
+
+However, this app bundler treats it as a Boolean property, which prevents it from working properly.
+
+I created this fork to fix the problem. With minor changes to a single file, `PlistConfiguration.java`, I've changed the property to a String, and this lets me set the flag properly.
+
+I should note that this bundler might be using a mildly out-of-date version of the Apple development tools, which may account for the discrepancy in the property type. In the [StackOverflow](https://stackoverflow.com/questions/5825684/lsuielement-application-be-responsive) question that explained the problem, two of the commentators say that `LSUIElement` is actually a string property, and include a link to the spec page (above) to illustrate their point, so in the recent past, it probably was a string property. This doesn't concern me, since I can now use this Application bundler to bundle my Java applications with this tiny modification, but I thought I should mention it.
+
+
 ## Requirements
 
 - Java 9 or newer
@@ -150,33 +168,33 @@ The values within the `plist` element are directly transferred to the [`Info.pli
 
 The following values can be configured:
 
-| Key | Type | Required? | Default | Description |
-| --- | ---- | --------- | ------- | ----------- |
-| `CFBundleDevelopmentRegion` | String | No | `English` | The default language and region for the bundle, as a [language ID](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPInternational/LanguageandLocaleIDs/LanguageandLocaleIDs.html). |
-| `CFBundleDisplayName` | String | No | `${project.name}` | The published name of your application. |
-| `CFBundleExecutable` | String | No | `JavaLauncher` | The name of the executable within the application bundle. No regular user will ever see this but you may want to change it for debugging purposes when analyzing your application. |
-| `CFBundleIconFile` | File | No | | The `icns` file that should be used as main icon for the application. The location must be entered relatively to the root of the project in which the plugin is used. |
-| `CFBundleIdentifier` | String | No | `${groupId}.${artifactId}` | The [macOS bundle identifier](https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundleidentifier) of your application. |
-| `CFBundleName` | String | No | `${project.name}` | The internal name of your application. |
-| `CFBundlePackageType` | String | No | `APPL` | A four-letter code specifying the bundle type. For apps, the code is `APPL`, for frameworks, it' `FMWK`, and for bundles, it's `BNDL` ([Details](https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundlepackagetype)) |
-| `CFBundleShortVersionString` | String | No | `${version}` | The version of your application. |
-| `CFBundleDocumentTypes` | Array of CFBundleDocumentTypes | No |  | Additional information for document types (see [details](#CFBundleDocumentTypes-configuration-example) for an extended example). |
-| `CFBundleURLTypes` | Array of Strings | No | | A list of URL schemes (`http`, `ftp`, etc.) supported by the application. |
-| `JVMArguments` | Array of Strings | No | | Additional arguments to be passed to the Java runtime. |
-| `JVMLogLevel` | String | No | `INFO` | The amount of details the launcher will print to the console if called directly from the command line. Possible values: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`. |
-| `JVMMainClassName` | String | Yes (if the application is a classic classpath based application) | | The main class whose `main` method should be invoked when starting your application. |
-| `JVMMainModuleName` | String | Yes (if the application is a module based application) | | The main module that should be invoked when starting your application. |
-| `JVMOptions` | Array of Strings | No | | Additional parameters (`-D` parameters) to be passed to the Java runtime. |
-| `JVMRuntimePath` | String | No | | The exact location of the Java runtime. |
-| `JVMVersion` | String | No | | The Java version your application needs to work. Can either be an explicit version String like `11.0.1`, a major version like `11` (signalizing that *any* Java 11 runtime is sufficient) or a value like `11+` (signalizing that *any* Java 11 *or higher* runtime is sufficient). |
-| `LSUIElement` | Boolean | No | | Declares if the application is an agent app that runs in the background and doesn't appear in the Dock ([Details](https://developer.apple.com/documentation/bundleresources/information_property_list/lsuielement)). |
-| `NSAppleMusicUsageDescription` | String | No | | A message that tells the user why the app is requesting access to the user’s media library. |
-| `NSAppSleepDisabled` | Boolean | No | | Declares if the app is allowed to nap or not. |
-| `NSCameraUsageDescription` | String | No | | A message that tells the user why the app is requesting access to the device's camera ([Details](https://developer.apple.com/documentation/bundleresources/information_property_list/nscamerausagedescription)). |
-| `NSHighResolutionCapable` | Boolean | No | `true` | Declares if the application supports rendering in HiDPI (Retina) ([Details](https://developer.apple.com/documentation/bundleresources/information_property_list/nshighresolutioncapable)). |
-| `NSHumanReadableCopyright` | String | No | | A human-readable copyright notice for the bundle ([Details](https://developer.apple.com/documentation/bundleresources/information_property_list/nshumanreadablecopyright/)). |
-| `NSMicrophoneUsageDescription` | String | No | | A message that tells the user why the application is requesting access to the device's microphone ([Details](https://developer.apple.com/documentation/bundleresources/information_property_list/nsmicrophoneusagedescription)). |
-| `NSSupportsAutomatic` `GraphicsSwitching` | Boolean | No | `true` | Declares whether an OpenGL app may utilize the integrated GPU ([Details](https://developer.apple.com/documentation/bundleresources/information_property_list/nssupportsautomaticgraphicsswitching)). |
+| Key | Type                           | Required?                                                         | Default | Description |
+| --- |--------------------------------|-------------------------------------------------------------------| ------- | ----------- |
+| `CFBundleDevelopmentRegion` | String                         | No                                                                | `English` | The default language and region for the bundle, as a [language ID](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPInternational/LanguageandLocaleIDs/LanguageandLocaleIDs.html). |
+| `CFBundleDisplayName` | String                         | No                                                                | `${project.name}` | The published name of your application. |
+| `CFBundleExecutable` | String                         | No                                                                | `JavaLauncher` | The name of the executable within the application bundle. No regular user will ever see this but you may want to change it for debugging purposes when analyzing your application. |
+| `CFBundleIconFile` | File                           | No                                                                | | The `icns` file that should be used as main icon for the application. The location must be entered relatively to the root of the project in which the plugin is used. |
+| `CFBundleIdentifier` | String                         | No                                                                | `${groupId}.${artifactId}` | The [macOS bundle identifier](https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundleidentifier) of your application. |
+| `CFBundleName` | String                         | No                                                                | `${project.name}` | The internal name of your application. |
+| `CFBundlePackageType` | String                         | No                                                                | `APPL` | A four-letter code specifying the bundle type. For apps, the code is `APPL`, for frameworks, it' `FMWK`, and for bundles, it's `BNDL` ([Details](https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundlepackagetype)) |
+| `CFBundleShortVersionString` | String                         | No                                                                | `${version}` | The version of your application. |
+| `CFBundleDocumentTypes` | Array of CFBundleDocumentTypes | No                                                                |  | Additional information for document types (see [details](#CFBundleDocumentTypes-configuration-example) for an extended example). |
+| `CFBundleURLTypes` | Array of Strings               | No                                                                | | A list of URL schemes (`http`, `ftp`, etc.) supported by the application. |
+| `JVMArguments` | Array of Strings               | No                                                                | | Additional arguments to be passed to the Java runtime. |
+| `JVMLogLevel` | String                         | No                                                                | `INFO` | The amount of details the launcher will print to the console if called directly from the command line. Possible values: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`. |
+| `JVMMainClassName` | String                         | Yes (if the application is a classic classpath based application) | | The main class whose `main` method should be invoked when starting your application. |
+| `JVMMainModuleName` | String                         | Yes (if the application is a module based application)            | | The main module that should be invoked when starting your application. |
+| `JVMOptions` | Array of Strings               | No                                                                | | Additional parameters (`-D` parameters) to be passed to the Java runtime. |
+| `JVMRuntimePath` | String                         | No                                                                | | The exact location of the Java runtime. |
+| `JVMVersion` | String                         | No                                                                | | The Java version your application needs to work. Can either be an explicit version String like `11.0.1`, a major version like `11` (signalizing that *any* Java 11 runtime is sufficient) or a value like `11+` (signalizing that *any* Java 11 *or higher* runtime is sufficient). |
+| `LSUIElement` | String                         | false                                                             | | Declares if the application is an agent app that runs in the background and doesn't appear in the Dock ([Details](https://developer.apple.com/documentation/bundleresources/information_property_list/lsuielement)). |
+| `NSAppleMusicUsageDescription` | String                         | No                                                                | | A message that tells the user why the app is requesting access to the user’s media library. |
+| `NSAppSleepDisabled` | Boolean                        | No                                                                | | Declares if the app is allowed to nap or not. |
+| `NSCameraUsageDescription` | String                         | No                                                                | | A message that tells the user why the app is requesting access to the device's camera ([Details](https://developer.apple.com/documentation/bundleresources/information_property_list/nscamerausagedescription)). |
+| `NSHighResolutionCapable` | Boolean                        | No                                                                | `true` | Declares if the application supports rendering in HiDPI (Retina) ([Details](https://developer.apple.com/documentation/bundleresources/information_property_list/nshighresolutioncapable)). |
+| `NSHumanReadableCopyright` | String                         | No                                                                | | A human-readable copyright notice for the bundle ([Details](https://developer.apple.com/documentation/bundleresources/information_property_list/nshumanreadablecopyright/)). |
+| `NSMicrophoneUsageDescription` | String                         | No                                                                | | A message that tells the user why the application is requesting access to the device's microphone ([Details](https://developer.apple.com/documentation/bundleresources/information_property_list/nsmicrophoneusagedescription)). |
+| `NSSupportsAutomatic` `GraphicsSwitching` | Boolean                        | No                                                                | `true` | Declares whether an OpenGL app may utilize the integrated GPU ([Details](https://developer.apple.com/documentation/bundleresources/information_property_list/nssupportsautomaticgraphicsswitching)). |
 
 ### CFBundleDocumentTypes configuration example
 
